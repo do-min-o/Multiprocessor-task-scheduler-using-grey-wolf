@@ -17,34 +17,6 @@ struct Wolf {
     int makespan; // Personal best fitness value
 };
 
-// Define parameters
-// Initialize the tasks and their dependencies
-// const vector<Task> TASKS = {{0, 2, {}, {0, 0, 0, 0, 0, 0, 0, 0, 0}},
-//                        {1, 3, {0}, {4, 0, 0, 0, 0, 0, 0, 0, 0}},
-//                        {2, 3, {0}, {1, 0, 0, 0, 0, 0, 0, 0, 0}},
-//                        {3, 4, {0}, {1, 0, 0, 0, 0, 0, 0, 0, 0}},
-//                        {4, 5, {0}, {1, 0, 0, 1, 0, 1, 0, 0, 0}},
-//                        {5, 4, {1}, {0, 1, 0, 0, 0, 0, 0, 0, 0}},
-//                        {6, 4, {0, 1, 2}, {20, 5, 5, 0, 0, 0, 0, 0, 0}},
-//                        {7, 4, {1, 2, 3, 4}, {0, 5, 1, 1, 10, 0, 0, 0, 0}},
-//                        {8, 1, {5, 6, 7}, {0, 0, 0, 0, 0, 10, 10, 10, 0}}};
-
-// const vector<Task> TASKS = {
-//     {0, 5, {}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-//     {1, 4, {0}, {3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-//     {2, 7, {0}, {5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-//     {3, 3, {0}, {2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-//     {4, 8, {0}, {5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-//     {5, 4, {1}, {0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-//     {6, 7, {2, 5}, {0, 0, 2, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0}},
-//     {7, 9, {3, 5}, {0, 0, 0, 6, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0}},
-//     {8, 4, {4, 5}, {0, 0, 0, 0, 4, 2, 0, 0, 0, 0, 0, 0, 0, 0}},
-//     {9, 7, {6}, {0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0}},
-//     {10, 4, {7, 9}, {0, 0, 0, 0, 0, 0, 0, 6, 0, 6, 0, 0, 0, 0}},
-//     {11, 8, {8, 9}, {0, 0, 0, 0, 0, 0, 0, 0, 7, 5, 0, 0, 0, 0}},
-//     {12, 4, {10}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0}},
-//     {13, 6, {11, 12}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 3, 0}}
-// };
 
 const vector<Task> TASKS = {
     {0,5,{},{0,0,0,0,0,0,0,0,0,0,0,0,0,0}},
@@ -66,7 +38,7 @@ const vector<Task> TASKS = {
 const int N = TASKS.size(); // Number of tasks
 const int M = 4;        // Number of processors
 const int MAX_ITER = 100; // Maximum number of iterations
-const int NUM_OF_WOLVES = 1000; // Number of wolves in PSO
+const int NUM_OF_WOLVES = 1000; // Number of wolves in GWO
 const long double MIN_POS = 0, MAX_POS = N-1;
 const long double a = 2.0;
 vector<Wolf> wolves;
@@ -132,7 +104,7 @@ int evaluateMakespan(const vector<long double> &priority) {
     return *max_element(finishTimesForProcessor.begin(), finishTimesForProcessor.end());
 }
 
-long double PSO(int number_of_threads) {
+long double GWO(int number_of_threads) {
     vector<Wolf> wolves(NUM_OF_WOLVES);
     vector<long double> global_best;
     int global_best_makespan = 1e9;
@@ -171,14 +143,12 @@ long double PSO(int number_of_threads) {
 
 #pragma omp parallel for num_threads(number_of_threads) schedule(dynamic)
         for(Wolf &wolf:wolves) {
-            // update velocity
             for(int i=0;i<N;i++) {
                 long double r1 = (long double)rand() / RAND_MAX;
                 long double r2 = (long double)rand() / RAND_MAX;
                 long double A = ((MAX_ITER - iter)/(MAX_ITER))*a*(2 * r1 - 1);
                 long double C = 2 * r2;
 
-                // Update solution
                 long double D_alpha = abs(C * alpha.solution[i] - wolf.solution[i]);
                 long double D_beta2 = abs(C * beta2.solution[i] - wolf.solution[i]);
                 long double D_delta = abs(C * delta.solution[i] - wolf.solution[i]);
@@ -204,7 +174,7 @@ int main(int argc, char **argv) {
     int number_of_threads = stoi(argv[1]);
     cout << "Lets begin" << endl;
     double start_time = omp_get_wtime();
-    long double answer = PSO(number_of_threads);
+    long double answer = GWO(number_of_threads);
     cout << answer << "\n";
     double end_time = omp_get_wtime();
     double elapsed_time = end_time - start_time;
