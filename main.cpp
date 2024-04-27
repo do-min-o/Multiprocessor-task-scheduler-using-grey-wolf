@@ -88,48 +88,39 @@ int evaluateMakespan(const vector<long double> &priority) {
             dependents[dependency].push_back(i);
         }
     }
-    priority_queue<pair<int,int>> events; // {-finishTime, task_id}
     vector<int> finishTimesForProcessor(M, 0), finishProc(N, -1), finishTimesForTask(N, -1); // Finish times for each processor
-    while(!events.empty() || !pq.empty()) {
-        if(!pq.empty()) {
-            int task_id = pq.top().second;
-            pq.pop();
-            int nax = -1e9, nax2 = -1e9, nax_processor_id = -1;
-            for(int dependency:TASKS[task_id].dependencies) {
-                int comm_time = finishTimesForTask[dependency] + TASKS[task_id].communicationCosts[dependency];
-                if(comm_time >= nax) {
-                    nax2 = nax;
-                    nax = comm_time;
-                    nax_processor_id = finishProc[dependency];
-                } else nax2 = max(nax2, comm_time);
-            }
+    while(!pq.empty()) {
+        int task_id = pq.top().second;
+        pq.pop();
+        int nax = -1e9, nax2 = -1e9, nax_processor_id = -1;
+        for(int dependency:TASKS[task_id].dependencies) {
+            int comm_time = finishTimesForTask[dependency] + TASKS[task_id].communicationCosts[dependency];
+            if(comm_time >= nax) {
+                nax2 = nax;
+                nax = comm_time;
+                nax_processor_id = finishProc[dependency];
+            } else nax2 = max(nax2, comm_time);
+        }
 
-            // find best processor
-            int best_start_time = 1e9, best_processor = -1;
-            for(int i=0;i<M;i++) {
-                int start_time;
-                if(i == nax_processor_id) {
-                    start_time = max(finishTimesForProcessor[i], nax2);
-                } else start_time = max(finishTimesForProcessor[i], nax);
-                if(start_time < best_start_time) {
-                    best_start_time = start_time;
-                    best_processor = i;
-                }
+        // find best processor
+        int best_start_time = 1e9, best_processor = -1;
+        for(int i=0;i<M;i++) {
+            int start_time;
+            if(i == nax_processor_id) {
+                start_time = max(finishTimesForProcessor[i], nax2);
+            } else start_time = max(finishTimesForProcessor[i], nax);
+            if(start_time < best_start_time) {
+                best_start_time = start_time;
+                best_processor = i;
             }
-            finishProc[task_id] = best_processor;
-            finishTimesForProcessor[best_processor] = best_start_time + TASKS[task_id].weight;
-            finishTimesForTask[task_id] = best_start_time + TASKS[task_id].weight;
-            events.push({-finishTimesForProcessor[best_processor], task_id});
-        } else {
-            int curr_time = -events.top().first;
-            while(!events.empty() && -events.top().first == curr_time) {
-                int completed_task = events.top().second;
-                events.pop();
-                for(int dependent: dependents[completed_task]) {
-                    deps_left[dependent]--;
-                    if(deps_left[dependent] == 0) pq.push({priority[dependent], dependent});
-                }
-            }
+        }
+        finishProc[task_id] = best_processor;
+        finishTimesForProcessor[best_processor] = best_start_time + TASKS[task_id].weight;
+        finishTimesForTask[task_id] = best_start_time + TASKS[task_id].weight;
+        events.push({-finishTimesForProcessor[best_processor], task_id});
+        for(int dependent: dependents[task_id]) {
+            deps_left[dependent]--;
+            if(deps_left[dependent] == 0) pq.push({priority[dependent], dependent});
         }
     }
 
